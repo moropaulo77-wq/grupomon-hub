@@ -229,6 +229,7 @@ select.tsel.active{background:#fdf8e8;border-color:#d4a017;font-weight:600}
 </head>
 <body>
 
+
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="lbox">
@@ -237,7 +238,7 @@ select.tsel.active{background:#fdf8e8;border-color:#d4a017;font-weight:600}
     <p>Sistema Comercial · Acesso Restrito</p>
     <div class="lf"><label>E-mail</label><input type="email" id="l-email" placeholder="seu@email.com" autocomplete="username"></div>
     <div class="lf"><label>Senha</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>
-    <button id="l-btn" onclick="doLogin()">Entrar no sistema</button>
+    <button id="l-btn">Entrar no sistema</button>
     <div id="l-err"></div>
     <div class="lfoot">Grupo Mon · Otimize Suprimentos Corporativos<br>Somente equipe autorizada</div>
   </div>
@@ -509,13 +510,14 @@ select.tsel.active{background:#fdf8e8;border-color:#d4a017;font-weight:600}
 
 
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script>
-// ── INIT
+<div id="toast"></div>
+<script type="module">
+import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref as _fbRef, push as _fbPush, set as _fbSet, remove as _fbRemove, onValue as _fbOnValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-firebase.initializeApp({
+// ── INIT
+const _app  = initializeApp({
   apiKey:"AIzaSyBXZP7Li23P2DVJ84LVx9lYUKay7gFNEOY",
   authDomain:"crm---rede.firebaseapp.com",
   databaseURL:"https://crm---rede-default-rtdb.firebaseio.com",
@@ -524,35 +526,17 @@ firebase.initializeApp({
   messagingSenderId:"553110194713",
   appId:"1:553110194713:web:60e75989627321ac3ff888"
 });
-var _auth = firebase.auth();
-var _db   = firebase.database();
-
-// ── LOGIN FUNCTIONS (after firebase init)
-function doLogin() {
-  var email = document.getElementById('l-email').value.trim();
-  var pass  = document.getElementById('l-pass').value;
-  var err   = document.getElementById('l-err');
-  var btn   = document.getElementById('l-btn');
-  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
-  btn.textContent='Entrando...'; btn.disabled=true; err.textContent='';
-  _auth.signInWithEmailAndPassword(email, pass).catch(function(){
-    btn.textContent='Entrar no sistema'; btn.disabled=false;
-    err.textContent='E-mail ou senha incorretos.';
-  });
-}
-function doLogout() {
-  if(confirm('Deseja sair?')) _auth.signOut();
-}
+const _auth = getAuth(_app);
+const _db   = getDatabase(_app);
+var db = _db; // alias for app_js compatibility
 
 // ── COMPAT ALIASES
-function ref(d,path){ return _db.ref(path); }
-function push(r,data){ return data!==undefined ? r.push(data) : r.push(); }
-function set(r,v){ return r.set(v); }
-function remove(r){ return r.remove(); }
-function onValue(r,cb,errCb){ r.on('value',function(s){cb(s);},errCb||function(){}); }
-function onAuthStateChanged(a,cb){ return a.onAuthStateChanged(cb); }
-function signInWithEmailAndPassword(a,e,p){ return a.signInWithEmailAndPassword(e,p); }
-function signOut(a){ return a.signOut(); }
+
+
+
+
+
+
 
 // ── PERFIS
 var GESTORES=['contato@marketon.com.br','market_on@outlook.com.br'];
@@ -569,33 +553,25 @@ var EMAIL_VEND={
 
 // ── STATE
 var isGestor=false, myVendedor='', currentUser=null;
+var tasks={}, lembretes={}, historico={}, vendas={}, kpisD={}, histVendas={};
+var taskFil='todas', addTaskOpen=false, addVendaOpen=false, kpiOpen=false, remOpen=false;
+var vendedorFiltro='', modalKey=null, modalType=null, modalTab='geral';
+var metas=[
+  {vend:'Paulo',fat:30000,cont:5,vis:2,prop:5,nov:3},
+  {vend:'David',fat:25000,cont:5,vis:2,prop:5,nov:2},
+  {vend:'Jefferson',fat:28000,cont:5,vis:2,prop:5,nov:3},
+  {vend:'Dheny',fat:22000,cont:5,vis:2,prop:4,nov:2},
+  {vend:'Keth',fat:20000,cont:5,vis:2,prop:4,nov:2},
+  {vend:'Abner',fat:20000,cont:5,vis:2,prop:4,nov:2},
+  {vend:'Alexandre',fat:18000,cont:5,vis:2,prop:4,nov:2},
+  {vend:'Paty',fat:18000,cont:5,vis:2,prop:4,nov:2},
+];
+
+// ── DB HELPERS (modular SDK style)
+function dbRef(path) { return ref(_db,path); }
 
 // ── AUTH
-// ── ATTACH BUTTON LISTENERS (after firebase loads)
-document.getElementById('l-btn').addEventListener('click', function() {
-  var email = document.getElementById('l-email').value.trim();
-  var pass  = document.getElementById('l-pass').value;
-  var err   = document.getElementById('l-err');
-  var btn   = document.getElementById('l-btn');
-  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
-  btn.textContent='Entrando...'; btn.disabled=true; err.textContent='';
-  _auth.signInWithEmailAndPassword(email, pass).catch(function(){
-    btn.textContent='Entrar no sistema'; btn.disabled=false;
-    err.textContent='E-mail ou senha incorretos.';
-  });
-});
-document.getElementById('l-pass').addEventListener('keydown', function(e){
-  if(e.key==='Enter') document.getElementById('l-btn').click();
-});
-document.getElementById('logout-btn').addEventListener('click', function(){
-  if(confirm('Deseja sair?')) _auth.signOut();
-});
-document.getElementById('sb').addEventListener('click', function(e){
-  var item = e.target.closest('.sb-item[data-page]');
-  if(item){ var page=item.getAttribute('data-page'); if(page) window.goPage(page); }
-});
-
-_auth.onAuthStateChanged(function(user){
+onAuthStateChanged(_auth, function(user){
   if(user){
     isGestor   = GESTORES.indexOf(user.email)>-1;
     myVendedor = EMAIL_VEND[user.email]||'';
@@ -614,7 +590,7 @@ _auth.onAuthStateChanged(function(user){
       ['fr','f-vend','kf-vend'].forEach(function(id){var e=document.getElementById(id);if(e&&myVendedor)e.value=myVendedor;});
     }
 
-    // Firebase listeners (single attachment)
+    // Listeners
     onValue(ref(_db,'tasks'),function(s){tasks=s.val()||{};document.getElementById('loading').style.display='none';renderAll();syncOk();},function(){setSS('off');});
     onValue(ref(_db,'lembretes'),function(s){lembretes=s.val()||{};renderRem();updBadge();});
     onValue(ref(_db,'historico'),function(s){historico=s.val()||{};renderHistPage();if(modalKey)refreshModal();});
@@ -629,24 +605,37 @@ _auth.onAuthStateChanged(function(user){
   }
 });
 
-// ── LOGIN
-document.addEventListener('DOMContentLoaded',function(){
-  // login via onclick direto no botão
-  document.getElementById('logout-btn').addEventListener('click',function(){
-    if(confirm('Deseja sair?'))signOut(_auth);
-  });
-
-  // ── SIDEBAR via event delegation (mais confiável que onclick)
-  document.getElementById('sb').addEventListener('click',function(e){
-    var item=e.target.closest('.sb-item[data-page]');
-    if(item){
-      var page=item.getAttribute('data-page');
-      if(page)window.goPage(page);
-    }
+// ── BUTTON LISTENERS
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('l-btn').addEventListener('click',function(){
+  var email=document.getElementById('l-email').value.trim();
+  var pass=document.getElementById('l-pass').value;
+  var err=document.getElementById('l-err'),btn=document.getElementById('l-btn');
+  if(!email||!pass){err.textContent='Preencha e-mail e senha.';return;}
+  btn.textContent='Entrando...';btn.disabled=true;err.textContent='';
+  signInWithEmailAndPassword(_auth,email,pass).catch(function(){
+    btn.textContent='Entrar no sistema';btn.disabled=false;
+    err.textContent='E-mail ou senha incorretos.';
   });
 });
+document.getElementById('l-pass').addEventListener('keydown',function(e){
+  if(e.key==='Enter')document.getElementById('l-btn').click();
+});
+document.getElementById('logout-btn').addEventListener('click',function(){
+  if(confirm('Deseja sair?'))signOut(_auth);
+});
+document.getElementById('sb').addEventListener('click',function(e){
+  var item=e.target.closest('.sb-item[data-page]');
+  if(item)window.goPage(item.getAttribute('data-page'));
+});
+}); // end DOMContentLoaded
 
-// ── APP JS
+// ── APP FUNCTIONS (need ref/push/set/remove/onValue as module aliases)
+var ref=dbRef, push=function(r,d){return d!==undefined?window._push(r,d):window._push(r);}, 
+    set=function(r,v){return window._set(r,v);}, 
+    remove=function(r){return window._remove(r);},
+    onValue=function(r,cb,e){return window._onVal(r,cb,e);};
+
 
 
 // ── PERFIS ─── ajuste aqui os gestores e o mapeamento email→vendedor
@@ -777,7 +766,7 @@ window.doLogin=function(){
     if(err)err.textContent='E-mail ou senha incorretos.';
   });
 };
-// logout handled by listener above
+window.doLogout=function(){ if(!confirm('Deseja sair?'))return; signOut(_auth); };
 
 // Tecla Enter no login
 
