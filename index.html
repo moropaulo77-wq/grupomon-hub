@@ -237,7 +237,7 @@ select.tsel.active{background:#fdf8e8;border-color:#d4a017;font-weight:600}
     <p>Sistema Comercial · Acesso Restrito</p>
     <div class="lf"><label>E-mail</label><input type="email" id="l-email" placeholder="seu@email.com" autocomplete="username"></div>
     <div class="lf"><label>Senha</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>
-    <button id="l-btn">Entrar no sistema</button>
+    <button id="l-btn" onclick="doLogin()">Entrar no sistema</button>
     <div id="l-err"></div>
     <div class="lfoot">Grupo Mon · Otimize Suprimentos Corporativos<br>Somente equipe autorizada</div>
   </div>
@@ -509,6 +509,20 @@ select.tsel.active{background:#fdf8e8;border-color:#d4a017;font-weight:600}
 
 
 
+<script>
+function doLogin() {
+  var email = document.getElementById('l-email').value.trim();
+  var pass  = document.getElementById('l-pass').value;
+  var err   = document.getElementById('l-err');
+  var btn   = document.getElementById('l-btn');
+  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
+  btn.textContent='Entrando...'; btn.disabled=true; err.textContent='';
+  firebase.auth().signInWithEmailAndPassword(email, pass).catch(function(e){
+    btn.textContent='Entrar no sistema'; btn.disabled=false;
+    err.textContent='E-mail ou senha incorretos.';
+  });
+}
+</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -589,20 +603,7 @@ _auth.onAuthStateChanged(function(user){
 
 // ── LOGIN
 document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('l-btn').addEventListener('click',function(){
-    var email=document.getElementById('l-email').value.trim();
-    var pass=document.getElementById('l-pass').value;
-    var err=document.getElementById('l-err'),btn=document.getElementById('l-btn');
-    if(!email||!pass){err.textContent='Preencha e-mail e senha.';return;}
-    btn.textContent='Entrando...';btn.disabled=true;err.textContent='';
-    signInWithEmailAndPassword(_auth,email,pass).catch(function(){
-      btn.textContent='Entrar no sistema';btn.disabled=false;
-      err.textContent='E-mail ou senha incorretos.';
-    });
-  });
-  document.getElementById('l-pass').addEventListener('keydown',function(e){
-    if(e.key==='Enter')document.getElementById('l-btn').click();
-  });
+  // login via onclick direto no botão
   document.getElementById('logout-btn').addEventListener('click',function(){
     if(confirm('Deseja sair?'))signOut(_auth);
   });
