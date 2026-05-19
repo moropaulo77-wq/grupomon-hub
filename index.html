@@ -509,25 +509,12 @@ select.tsel.active{background:#fdf8e8;border-color:#d4a017;font-weight:600}
 
 
 
-<script>
-function doLogin() {
-  var email = document.getElementById('l-email').value.trim();
-  var pass  = document.getElementById('l-pass').value;
-  var err   = document.getElementById('l-err');
-  var btn   = document.getElementById('l-btn');
-  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
-  btn.textContent='Entrando...'; btn.disabled=true; err.textContent='';
-  firebase.auth().signInWithEmailAndPassword(email, pass).catch(function(e){
-    btn.textContent='Entrar no sistema'; btn.disabled=false;
-    err.textContent='E-mail ou senha incorretos.';
-  });
-}
-</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 // ── INIT
+
 firebase.initializeApp({
   apiKey:"AIzaSyBXZP7Li23P2DVJ84LVx9lYUKay7gFNEOY",
   authDomain:"crm---rede.firebaseapp.com",
@@ -539,6 +526,23 @@ firebase.initializeApp({
 });
 var _auth = firebase.auth();
 var _db   = firebase.database();
+
+// ── LOGIN FUNCTIONS (after firebase init)
+function doLogin() {
+  var email = document.getElementById('l-email').value.trim();
+  var pass  = document.getElementById('l-pass').value;
+  var err   = document.getElementById('l-err');
+  var btn   = document.getElementById('l-btn');
+  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
+  btn.textContent='Entrando...'; btn.disabled=true; err.textContent='';
+  _auth.signInWithEmailAndPassword(email, pass).catch(function(){
+    btn.textContent='Entrar no sistema'; btn.disabled=false;
+    err.textContent='E-mail ou senha incorretos.';
+  });
+}
+function doLogout() {
+  if(confirm('Deseja sair?')) _auth.signOut();
+}
 
 // ── COMPAT ALIASES
 function ref(d,path){ return _db.ref(path); }
@@ -567,6 +571,30 @@ var EMAIL_VEND={
 var isGestor=false, myVendedor='', currentUser=null;
 
 // ── AUTH
+// ── ATTACH BUTTON LISTENERS (after firebase loads)
+document.getElementById('l-btn').addEventListener('click', function() {
+  var email = document.getElementById('l-email').value.trim();
+  var pass  = document.getElementById('l-pass').value;
+  var err   = document.getElementById('l-err');
+  var btn   = document.getElementById('l-btn');
+  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
+  btn.textContent='Entrando...'; btn.disabled=true; err.textContent='';
+  _auth.signInWithEmailAndPassword(email, pass).catch(function(){
+    btn.textContent='Entrar no sistema'; btn.disabled=false;
+    err.textContent='E-mail ou senha incorretos.';
+  });
+});
+document.getElementById('l-pass').addEventListener('keydown', function(e){
+  if(e.key==='Enter') document.getElementById('l-btn').click();
+});
+document.getElementById('logout-btn').addEventListener('click', function(){
+  if(confirm('Deseja sair?')) _auth.signOut();
+});
+document.getElementById('sb').addEventListener('click', function(e){
+  var item = e.target.closest('.sb-item[data-page]');
+  if(item){ var page=item.getAttribute('data-page'); if(page) window.goPage(page); }
+});
+
 _auth.onAuthStateChanged(function(user){
   if(user){
     isGestor   = GESTORES.indexOf(user.email)>-1;
@@ -733,7 +761,7 @@ function showApp(user){
   var fr=document.getElementById('fr'); if(fr&&myVendedor)fr.value=myVendedor;
   var fvend=document.getElementById('f-vend'); if(fvend&&myVendedor)fvend.value=myVendedor;
   var kfvend=document.getElementById('kf-vend'); if(kfvend&&myVendedor)kfvend.value=myVendedor;
-  startListeners();
+  
 }
 
 window.doLogin=function(){
@@ -749,30 +777,10 @@ window.doLogin=function(){
     if(err)err.textContent='E-mail ou senha incorretos.';
   });
 };
-window.doLogout=function(){
-  if(!confirm('Deseja sair do sistema?'))return;
-  tasks={}; lembretes={}; historico={}; vendas={}; kpisD={}; histVendas={};
-  signOut(auth);
-};
+// logout handled by listener above
 
 // Tecla Enter no login
 
-});
-
-// ── FIREBASE LISTENERS
-function startListeners(){
-  onValue(ref(db,'.info/connected'),function(s){setSS(s.val()?'on':'off');});
-  onValue(ref(db,'tasks'),function(s){
-    tasks=s.val()||{};
-    document.getElementById('loading').style.display='none';
-    renderAll(); syncOk();
-  },function(){setSS('off');});
-  onValue(ref(db,'lembretes'),function(s){lembretes=s.val()||{};renderRem();updBadge();});
-  onValue(ref(db,'historico'),function(s){historico=s.val()||{};renderHistPage();if(modalKey)refreshModal();});
-  onValue(ref(db,'vendas_otimize'),function(s){vendas=s.val()||{};renderVendasPage();renderDashVendas();renderComp();renderMetas();renderRealizado();populateVendSels();syncOk();});
-  onValue(ref(db,'kpis_otimize'),function(s){kpisD=s.val()||{};renderKpis();renderMetas();renderComp();});
-  onValue(ref(db,'hist_otimize'),function(s){histVendas=s.val()||{};if(modalKey)refreshModal();});
-}
 
 // ── CLOCK
 function clock(){
