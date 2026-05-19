@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Teste Login</title>
+</head>
+<body style="font-family:sans-serif;padding:40px;max-width:420px;margin:auto">
+<h2>Teste Firebase Login</h2>
+<div id="status" style="padding:10px;background:#f0f0f0;border-radius:6px;margin-bottom:16px">Carregando...</div>
+<input type="email" id="email" value="contato@marketon.com.br"
+  style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ccc;border-radius:6px;font-size:1rem;box-sizing:border-box">
+<input type="password" id="pass" placeholder="Sua senha"
+  style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ccc;border-radius:6px;font-size:1rem;box-sizing:border-box">
+<button id="btn"
+  style="width:100%;padding:12px;background:#1a2e5a;color:#fff;border:none;border-radius:6px;font-size:1rem;cursor:pointer">
+  Entrar
+</button>
+<div id="log" style="margin-top:16px;background:#f4f6fa;padding:14px;border-radius:8px;font-size:.85rem;line-height:1.8"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+function log(msg, color) {
+  document.getElementById('log').innerHTML += '<div style="color:'+(color||'#333')+'">'+msg+'</div>';
+}
+
+function setStatus(msg, color) {
+  var el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.background = color==='green'?'#ecfdf5':color==='red'?'#fef2f2':'#f0f0f0';
+}
+
+try {
+  log('Iniciando Firebase...', '#7a7a9a');
+  
+  const app = initializeApp({
+    apiKey: "AIzaSyBXZP7Li23P2DVJ84LVx9lYUKay7gFNEOY",
+    authDomain: "crm---rede.firebaseapp.com",
+    databaseURL: "https://crm---rede-default-rtdb.firebaseio.com",
+    projectId: "crm---rede",
+    storageBucket: "crm---rede.firebasestorage.app",
+    messagingSenderId: "553110194713",
+    appId: "1:553110194713:web:60e75989627321ac3ff888"
+  });
+
+  const auth = getAuth(app);
+  log('✅ Firebase OK!', 'green');
+  setStatus('Firebase carregado. Faça login.', 'green');
+
+  onAuthStateChanged(auth, function(user) {
+    if(user) {
+      log('✅ Logado: ' + user.email, 'green');
+      setStatus('Logado: ' + user.email, 'green');
+    } else {
+      log('ℹ️ Sem sessão ativa', '#7a7a9a');
+    }
+  });
+
+  document.getElementById('btn').addEventListener('click', function() {
+    var email = document.getElementById('email').value.trim();
+    var pass  = document.getElementById('pass').value;
+    if(!email || !pass) { log('❌ Preencha e-mail e senha', 'red'); return; }
+    log('Tentando login: ' + email, '#1a2e5a');
+    document.getElementById('btn').textContent = 'Aguarde...';
+    signInWithEmailAndPassword(auth, email, pass)
+      .then(function(cred) {
+        log('✅ LOGIN OK: ' + cred.user.email, 'green');
+        setStatus('LOGIN OK: ' + cred.user.email, 'green');
+        document.getElementById('btn').textContent = 'Entrar';
+      })
+      .catch(function(err) {
+        log('❌ ERRO: ' + err.code, 'red');
+        log('Mensagem: ' + err.message, 'red');
+        document.getElementById('btn').textContent = 'Entrar';
+      });
+  });
+
+} catch(e) {
+  log('❌ Erro: ' + e.message, 'red');
+  setStatus('Erro: ' + e.message, 'red');
+}
+</script>
+</body>
+</html>
